@@ -1,0 +1,102 @@
+kind: Secret
+apiVersion: v1
+metadata:
+  name: postgres-secret
+  namespace: my-app
+data:
+  POSTGRES_USER: cG9zdGdyZXM=        
+  POSTGRES_PASSWORD: cm9vdA==        
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+   name: postgres-configmap 
+   namespace: my-app
+data:
+  POSTGRES_DB: fullstackdb
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+   name: postgres-volume
+   namespace: my-app
+spec:
+   storageClassName: manual
+   capacity:
+     storage: 1Gi
+   accessModes:
+    - ReadWriteMany
+   hostPath:
+      path: /data/postgresql
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+   name: postgres-volume-claim
+   namespace: my-app
+spec:
+   storageClassName: manual
+   accessModes: 
+    - ReadWriteMany
+   resources:
+     requests:
+       storage: 1Gi
+
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: postgres-deployment
+   namespace: my-app
+spec:
+   replicas: 1
+   selector:
+     matchLabels:
+       app: postgres 
+   template:
+     metadata:
+      labels:
+       app: postgres
+     spec:
+      containers:
+      - name: postgres
+        image: postgres:latest
+        ports:
+        - containerPort: 5432
+        envFrom:
+          - configMapRef:
+              name: postgres-configmap
+          - secretRef:
+              name: postgres-secret
+        volumeMounts:
+         - mountPath: /var/lib/postgresql/data
+           name: postgresdata
+      volumes:
+        - name: postgresdata
+          persistentVolumeClaim:
+            claimName: postgres-volume-claim
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+   name: postgres-service 
+   namespace: my-app
+
+spec:
+   selector:
+     app: postgres
+   ports:
+   - protocol: TCP
+     port: 5432
+     targetPort: 5432
+
+

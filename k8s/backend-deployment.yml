@@ -1,0 +1,46 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+   name: backend-deployment 
+   namespace: my-app
+spec:
+    replicas: 1
+    selector: 
+      matchLabels:
+        app: backend
+    template:
+      metadata:
+        labels:
+          app: backend
+      spec:
+       containers:
+       - name: backend
+         image: root938/test-backend-app
+         ports:
+         - containerPort: 5000
+         env:
+          - name: DB_HOST
+            value: "postgres"
+          - name: DB_PORT
+            value: "5432"
+          - name: DB_NAME
+            value: "fullstackdb"
+          - name: DB_USER
+            value: "postgres"
+          - name: DB_PASS
+            value: "root"
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+   name: backend-service
+   namespace: my-app
+spec:
+    selector:
+      app: backend
+    ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
